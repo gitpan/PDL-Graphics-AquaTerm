@@ -3,3 +3,7 @@ Revision history for Perl extension Graphics::AquaTerm.
 0.01  Sun Jan 23 2005
         - finished preparing the initial version for distribution through
             CPAN.
+
+0.02  Sat Feb 12 2005
+        - changed documentation so that it will (hopefully) parse correctly
+        - re-wrote to use "pp_def" only when necessary, and using xs otherwise

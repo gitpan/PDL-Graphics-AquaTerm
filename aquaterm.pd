@@ -1,4 +1,4 @@
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 pp_bless('PDL::Graphics::AquaTerm');
 
@@ -11,63 +11,8 @@ pp_addhdr('
 ');
 
 ###
-# Routines that interface to the aquaterm adapter
+# pp_def
 ###
-
-# initialize a connection to aquaterm
-
-pp_def('callAqtInit',
-	Pars => '',
-	GenericTypes => [S],
-	Code => '
-		aqtInit();
-	'
-);
-
-# opens a plot
-
-pp_def('callAqtOpenPlot',
-	Pars => '',
-	OtherPars => 'int win_num',
-	GenericTypes => [S],
-	Code => '
-		aqtOpenPlot($COMP(win_num));
-	'
-);
-
-# selects a plot for drawing
-#   printf("SelectPlot - %d\n",$COMP(win_num)); debugging relic
-
-pp_def('callAqtSelectPlot',
-	Pars => '',
-	OtherPars => 'int win_num',
-	GenericTypes => [S],
-	Code => '
-		aqtSelectPlot($COMP(win_num));
-	'
-);
-
-# sets the plot size
-
-pp_def('callAqtSetPlotSize',
-	Pars => '',
-	OtherPars => 'int size_x; int size_y',
-	GenericTypes => [S],
-	Code => '
-		aqtSetPlotSize($COMP(size_x), $COMP(size_y));
-	'
-);
-
-# set the plot title
-
-pp_def('callAqtSetPlotTitle',
-	Pars => '',
-	OtherPars => 'char *title',
-	GenericTypes => [S],
-	Code => '
-		aqtSetPlotTitle($COMP(title));
-	'
-);
 
 # set the background color
 
@@ -89,59 +34,6 @@ pp_def('callAqtSetColor',
 	'
 );
 
-# move to a position on the screen
-
-pp_def('callAqtMoveTo',
-	Pars => '',
-	OtherPars => 'float x; float y',
-	GenericTypes => [F],
-	Code => '
-		aqtMoveTo($COMP(x), $COMP(y));
-	'
-);
-
-# line to a position on the screen
-
-pp_def('callAqtAddLineTo',
-	Pars => '',
-	OtherPars => 'float x; float y',
-	GenericTypes => [F],
-	Code => '
-		aqtAddLineTo($COMP(x), $COMP(y));
-	'
-);
-
-# render the plot
-
-pp_def('callAqtRenderPlot',
-	Pars => '',
-	GenericTypes => [S],
-	Code => '
-		aqtRenderPlot();
-	'
-);
-
-# clear the plot
-
-pp_def('callAqtClearPlot',
-	Pars => '',
-	GenericTypes => [S],
-	Code => '
-		aqtClearPlot();
-	'
-);
-
-# add a label to the plot
-
-pp_def('callAqtAddLabel',
-	Pars => '',
-	OtherPars => 'char *text; float x; float y; float angle; int align',
-	GenericTypes => [F],
-	Code => '
-		aqtAddLabel($COMP(text), $COMP(x), $COMP(y), $COMP(angle), $COMP(align));
-	'
-);
-
 # add a bitmap to the plot
 
 pp_def('callAqtBitmap',
@@ -151,28 +43,6 @@ pp_def('callAqtBitmap',
 	Code => '
 		aqtEraseRect($COMP(dx), $COMP(dy), $COMP(dw), $COMP(dh));
 		aqtAddImageWithBitmap($P(bm), $SIZE(m), $SIZE(o), $COMP(dx), $COMP(dy), $COMP(dw), $COMP(dh));
-	'
-);
-
-# set the line-width
-
-pp_def('callAqtSetLineWidth',
-	Pars => '',
-	OtherPars => 'float lw',
-	GenericTypes => [F],
-	Code => '
-		aqtSetLinewidth($COMP(lw));
-	'
-);
-
-# set the line cap style
-
-pp_def('callAqtSetLineCapStyle',
-	Pars => '',
-	OtherPars => 'int cs',
-	GenericTypes => [S],
-	Code => '
-		aqtSetLineCapStyle($COMP(cs));
 	'
 );
 
@@ -187,36 +57,14 @@ pp_def('callAqtPolyline',
 	'
 );
 
-# set text font
-
-pp_def('callAqtSetFontname',
-	Pars => '',
-	OtherPars => 'char *fn',
-	GenericTypes => [B],
-	Code => '
-		aqtSetFontname($COMP(fn));
-	'
-);
-
-# set text size
-
-pp_def('callAqtSetFontsize',
-	Pars => '',
-	OtherPars => 'float fs',
-	GenericTypes => [F],
-	Code => '
-		aqtSetFontsize($COMP(fs));
-	'
-);
-
-
 ###
 # XS
 ###
 
 # deals with mouse events, which return a string giving the mouse location
 
-pp_addxs('','
+pp_addxs(<<'EOC');
+
 char *
 callAqtWaitNextEvent()
 	CODE:
@@ -227,8 +75,68 @@ callAqtWaitNextEvent()
 		RETVAL = temp;
 	OUTPUT:
 		RETVAL
-');
+		
+void
+aqtInit()
 
+void
+aqtOpenPlot(win_num)
+	int win_num
+
+void
+aqtSelectPlot(win_num)
+	int win_num
+
+void
+aqtSetPlotSize(size_x, size_y)
+	int size_x
+	int size_y
+	
+void
+aqtSetPlotTitle(title)
+	char *title
+
+void
+aqtMoveTo(x,y)
+	int x
+	int y
+	
+void
+aqtAddLineTo(x,y)
+	int x
+	int y
+
+void
+aqtRenderPlot()
+
+void
+aqtClearPlot()
+
+void
+aqtAddLabel(text, x, y, angle, align)
+	char *text
+	float x
+	float y
+	float angle
+	int align
+
+void
+aqtSetLinewidth(lw)
+	float lw
+
+void
+aqtSetLineCapStyle(cs)
+	int cs
+
+void
+aqtSetFontname(fn)
+	char *fn
+
+void
+aqtSetFontsize(fs)
+	float fs
+
+EOC
 
 ###
 # Perl subroutines
@@ -275,7 +183,7 @@ sub selectWindow {
 	
 	if ($open_windows{$win_num}) {
 		unless ($current_window == $win_num) {
-			callAqtSelectPlot($win_num);
+			aqtSelectPlot($win_num);
 			$current_window = $win_num;
 		}
 	} else {
@@ -351,7 +259,7 @@ sub aquaOpen{
 	# initialize connection to aquaterm program, if that hasn't already been done
 	
 	unless ($initialized) {
-		callAqtInit();
+		aqtInit();
 		$initialized = 1;
 	}
 
@@ -369,17 +277,17 @@ sub aquaOpen{
 	
 	# open up a window with the user/default parameters
 	
-	callAqtOpenPlot($window_options{"WIN_NUM"});
-	callAqtSetPlotSize($window_options{"SIZE_X"}, $window_options{"SIZE_Y"});
-	callAqtSetPlotTitle($win_title);
+	aqtOpenPlot($window_options{"WIN_NUM"});
+	aqtSetPlotSize($window_options{"SIZE_X"}, $window_options{"SIZE_Y"});
+	aqtSetPlotTitle($win_title);
 
 	# this forces aquaterm to actually open and draw the window
 
 	callAqtSetBackgroundColor(pdl($window_options{"BACK_COLOR"}));
-	callAqtMoveTo(0.0, 0.0);
-	callAqtAddLineTo(1.0, 1.0);
-	callAqtRenderPlot();
-	callAqtClearPlot();
+	aqtMoveTo(0.0, 0.0);
+	aqtAddLineTo(1.0, 1.0);
+	aqtRenderPlot();
+	aqtClearPlot();
 	
 	# if necessary, initialize the default color table (a gray scale)
 	
@@ -497,7 +405,7 @@ sub aquaBitmap{
 		$the_bitmap = index($color_table, $the_bitmap->dummy(0));	# convert the image to true color
 	}
 	
-	if($display_options{"ERASE"}) { callAqtClearPlot(); }	# if desired, clear the current plot
+	if($display_options{"ERASE"}) { aqtClearPlot(); }	# if desired, clear the current plot
 
 	# display the image
 	
@@ -507,12 +415,12 @@ sub aquaBitmap{
 	
 	if ($display_options{"TEXT"}){
 		callAqtSetColor(pdl($display_options{"TEXT_C"}));
-		callAqtAddLabel($display_options{"TEXT"}, $display_options{"TEXT_X"}, $display_options{"TEXT_Y"}, 0.0, 0);
+		aqtAddLabel($display_options{"TEXT"}, $display_options{"TEXT_X"}, $display_options{"TEXT_Y"}, 0.0, 0);
 	}
 	
 	# tell aquaterm to draw the new plot
 	
-	callAqtRenderPlot();
+	aqtRenderPlot();
 	
 	return 1;
 }
@@ -579,10 +487,10 @@ sub aquaPolyLine{
 
 	# set up for line drawing
 	
-	if($line_options{"ERASE"}) { callAqtClearPlot(); }	# if desired, clear the current plot
-	callAqtSetColor(pdl($line_options{"COLOR"}));		# set the line color
-	callAqtSetLineWidth($line_options{"WIDTH"});		# set the line width
-	callAqtSetLineCapStyle($line_options{"CAPS"});		# set the line cap style
+	if($line_options{"ERASE"}) { aqtClearPlot(); }	# if desired, clear the current plot
+	callAqtSetColor(pdl($line_options{"COLOR"}));	# set the line color
+	aqtSetLinewidth($line_options{"WIDTH"});		# set the line width
+	aqtSetLineCapStyle($line_options{"CAPS"});		# set the line cap style
 	
 	# add the line to the plot
 	
@@ -592,7 +500,7 @@ sub aquaPolyLine{
 	
 	# render the plot
 	
-	callAqtRenderPlot();
+	aqtRenderPlot();
 }
 
 # draw text on the screen with the selectable font, size & color
@@ -638,17 +546,17 @@ sub aquaText{
 	# set the font size & type & color
 	
 	callAqtSetColor(pdl($text_options{"COLOR"}));
-	callAqtSetFontname($text_options{"NAME"});
-	callAqtSetFontsize($text_options{"SIZE"});
+	aqtSetFontname($text_options{"NAME"});
+	aqtSetFontsize($text_options{"SIZE"});
 
 	# draw the text
 	
-	if($text_options{"ERASE"}) { callAqtClearPlot(); }	# if desired, clear the current plot
-	callAqtAddLabel($the_text, $text_options{"X"}, $text_options{"Y"}, $text_options{"ANGLE"}, $text_options{"JUST"});
+	if($text_options{"ERASE"}) { aqtClearPlot(); }	# if desired, clear the current plot
+	aqtAddLabel($the_text, $text_options{"X"}, $text_options{"Y"}, $text_options{"ANGLE"}, $text_options{"JUST"});
 
 	# render the plot
 	
-	callAqtRenderPlot();	
+	aqtRenderPlot();	
 }
 
 
@@ -709,25 +617,25 @@ PDL::Graphics::AquaTerm - Provides access to the AquaTerm Mac OS-X graphics term
 
 =head1 SYNOPSIS
 
-# example 1
+  # example 1
 
-use PDL;
-use PDL::Graphics::LUT;
-use PDL::Graphics::AquaTerm;
-my $x_size = 255; my $y_size = 255;
-aquaOpen({SIZE_X => $x_size, SIZE_Y => $y_size});
-aquaSetColorTable(cat(lut_data('idl5')));
-my $a = xvals(zeroes(byte,$x_size,$y_size));
-aquaBitmap($a);
+  use PDL;
+  use PDL::Graphics::LUT;
+  use PDL::Graphics::AquaTerm;
+  my $x_size = 255; my $y_size = 255;
+  aquaOpen({SIZE_X => $x_size, SIZE_Y => $y_size});
+  aquaSetColorTable(cat(lut_data('idl5')));
+  my $a = xvals(zeroes(byte,$x_size,$y_size));
+  aquaBitmap($a);
 
 # example 2
 
-use PDL;
-use PDL::Graphics::AquaTerm;
-my $x_size = 255; my $y_size = 255;
-aquaOpen({WIN_NUM => 1, SIZE_X => $x_size, SIZE_Y => $y_size});
-my $a = sin(xvals(zeroes(float, $x_size, $y_size)) * 0.1);
-aquaBitmap($a, {AUTO_SCALE => 1});
+  use PDL;
+  use PDL::Graphics::AquaTerm;
+  my $x_size = 255; my $y_size = 255;
+  aquaOpen({WIN_NUM => 1, SIZE_X => $x_size, SIZE_Y => $y_size});
+  my $a = sin(xvals(zeroes(float, $x_size, $y_size)) * 0.1);
+  aquaBitmap($a, {AUTO_SCALE => 1});
 
 =head1 DESCRIPTION
 

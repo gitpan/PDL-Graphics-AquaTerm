@@ -1,4 +1,4 @@
-PDL/Graphics/AquaTerm version 0.01
+PDL/Graphics/AquaTerm version 0.02
 ==============================
 
 This module interfaces PDL directly to the AquaTerm Mac OS-X graphics terminal.
