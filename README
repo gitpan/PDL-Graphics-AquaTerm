@@ -1,0 +1,32 @@
+PDL/Graphics/AquaTerm version 0.01
+==============================
+
+This module interfaces PDL directly to the AquaTerm Mac OS-X graphics terminal.
+It is primarily intended for quickly and easily displaying pdls as bitmap
+images. If all you desire is to be able to call AquaTerm functions from Perl 
+you might instead be interested in Graphics::AquaTerm, currently distributed 
+along with AquaTerm itself from SourceForge.
+
+INSTALLATION
+
+To install this module type the following:
+
+   perl Makefile.PL
+   make
+   make test
+   make install
+
+DEPENDENCIES
+
+This module requires the AquaTerm graphics display program available
+from Sourceforge and a reasonably recent version of the PDL module.
+
+sourceforge.net/projects/aquaterm/
+
+COPYRIGHT AND LICENCE
+
+Copyright (C) 2005 Hazen Babcock
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself. 
+

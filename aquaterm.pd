@@ -1,0 +1,895 @@
+$VERSION = '0.01';
+
+pp_bless('PDL::Graphics::AquaTerm');
+
+###
+# Header files
+###
+
+pp_addhdr('
+	#include "aquaterm/aquaterm.h"
+');
+
+###
+# Routines that interface to the aquaterm adapter
+###
+
+# initialize a connection to aquaterm
+
+pp_def('callAqtInit',
+	Pars => '',
+	GenericTypes => [S],
+	Code => '
+		aqtInit();
+	'
+);
+
+# opens a plot
+
+pp_def('callAqtOpenPlot',
+	Pars => '',
+	OtherPars => 'int win_num',
+	GenericTypes => [S],
+	Code => '
+		aqtOpenPlot($COMP(win_num));
+	'
+);
+
+# selects a plot for drawing
+#   printf("SelectPlot - %d\n",$COMP(win_num)); debugging relic
+
+pp_def('callAqtSelectPlot',
+	Pars => '',
+	OtherPars => 'int win_num',
+	GenericTypes => [S],
+	Code => '
+		aqtSelectPlot($COMP(win_num));
+	'
+);
+
+# sets the plot size
+
+pp_def('callAqtSetPlotSize',
+	Pars => '',
+	OtherPars => 'int size_x; int size_y',
+	GenericTypes => [S],
+	Code => '
+		aqtSetPlotSize($COMP(size_x), $COMP(size_y));
+	'
+);
+
+# set the plot title
+
+pp_def('callAqtSetPlotTitle',
+	Pars => '',
+	OtherPars => 'char *title',
+	GenericTypes => [S],
+	Code => '
+		aqtSetPlotTitle($COMP(title));
+	'
+);
+
+# set the background color
+
+pp_def('callAqtSetBackgroundColor',
+	Pars => 'rgb(n);',
+	GenericTypes => [F],
+	Code => '
+		aqtSetBackgroundColor($rgb(n=>0), $rgb(n=>1), $rgb(n=>2));
+	'
+);
+
+# set the current plot color
+
+pp_def('callAqtSetColor',
+	Pars => 'rgb(n);',
+	GenericTypes => [F],
+	Code => '
+		aqtSetColor($rgb(n=>0), $rgb(n=>1), $rgb(n=>2));
+	'
+);
+
+# move to a position on the screen
+
+pp_def('callAqtMoveTo',
+	Pars => '',
+	OtherPars => 'float x; float y',
+	GenericTypes => [F],
+	Code => '
+		aqtMoveTo($COMP(x), $COMP(y));
+	'
+);
+
+# line to a position on the screen
+
+pp_def('callAqtAddLineTo',
+	Pars => '',
+	OtherPars => 'float x; float y',
+	GenericTypes => [F],
+	Code => '
+		aqtAddLineTo($COMP(x), $COMP(y));
+	'
+);
+
+# render the plot
+
+pp_def('callAqtRenderPlot',
+	Pars => '',
+	GenericTypes => [S],
+	Code => '
+		aqtRenderPlot();
+	'
+);
+
+# clear the plot
+
+pp_def('callAqtClearPlot',
+	Pars => '',
+	GenericTypes => [S],
+	Code => '
+		aqtClearPlot();
+	'
+);
+
+# add a label to the plot
+
+pp_def('callAqtAddLabel',
+	Pars => '',
+	OtherPars => 'char *text; float x; float y; float angle; int align',
+	GenericTypes => [F],
+	Code => '
+		aqtAddLabel($COMP(text), $COMP(x), $COMP(y), $COMP(angle), $COMP(align));
+	'
+);
+
+# add a bitmap to the plot
+
+pp_def('callAqtBitmap',
+	Pars => 'bm(n,m,o)',
+	OtherPars => 'float dx; float dy; float dw; float dh',
+	GenericTypes => [B],
+	Code => '
+		aqtEraseRect($COMP(dx), $COMP(dy), $COMP(dw), $COMP(dh));
+		aqtAddImageWithBitmap($P(bm), $SIZE(m), $SIZE(o), $COMP(dx), $COMP(dy), $COMP(dw), $COMP(dh));
+	'
+);
+
+# set the line-width
+
+pp_def('callAqtSetLineWidth',
+	Pars => '',
+	OtherPars => 'float lw',
+	GenericTypes => [F],
+	Code => '
+		aqtSetLinewidth($COMP(lw));
+	'
+);
+
+# set the line cap style
+
+pp_def('callAqtSetLineCapStyle',
+	Pars => '',
+	OtherPars => 'int cs',
+	GenericTypes => [S],
+	Code => '
+		aqtSetLineCapStyle($COMP(cs));
+	'
+);
+
+# add a line to the plot
+#	printf("size %d %f %f\n",$SIZE(n),$lx(n=>1),$ly(n=>1)); debugging relic
+
+pp_def('callAqtPolyline',
+	Pars => 'lx(n); ly(n)',
+	GenericTypes => [F],
+	Code => '
+		aqtAddPolyline($P(lx), $P(ly), $SIZE(n));
+	'
+);
+
+# set text font
+
+pp_def('callAqtSetFontname',
+	Pars => '',
+	OtherPars => 'char *fn',
+	GenericTypes => [B],
+	Code => '
+		aqtSetFontname($COMP(fn));
+	'
+);
+
+# set text size
+
+pp_def('callAqtSetFontsize',
+	Pars => '',
+	OtherPars => 'float fs',
+	GenericTypes => [F],
+	Code => '
+		aqtSetFontsize($COMP(fs));
+	'
+);
+
+
+###
+# XS
+###
+
+# deals with mouse events, which return a string giving the mouse location
+
+pp_addxs('','
+char *
+callAqtWaitNextEvent()
+	CODE:
+		int val;
+		char temp[40];
+		
+		val = aqtWaitNextEvent(temp);
+		RETVAL = temp;
+	OUTPUT:
+		RETVAL
+');
+
+
+###
+# Perl subroutines
+###
+
+pp_addpm(<<'EOD');
+
+## we need PDL
+
+use PDL;
+
+## private variables
+
+my $warning_message = ">>> AquaTerm.pm Warning : "; # generic start of warning messages
+my $debug_message = ">>> AquaTerm.pm Debug : ";		# generic start of debugging messages
+my %open_windows;			# stores whether the window exists (by whether the key/value is defined/undefined)
+my $win_counter = 1;		# the default window number to open
+my $initialized = 0;		# flag for whether the connection to the aquaterm program was already made
+my $warn_on = 0;			# turn on/off whether warnings are desired
+my $debug_on = 0;			# turn on/off whether debugging information is desired
+my $current_window = 1;		# the currently active window
+my $color_table = pdl(0);	# local storage for a user-defined color table
+	
+my %window_options = (	# default window options
+	SIZE_X => 400,
+	SIZE_Y => 300,
+	WIN_TITLE => "AquaTerm.pm",
+	BACK_COLOR => [1.0, 1.0, 1.0],
+	WARN_ON => 1,
+	DEBUG_ON => 0
+);
+
+## the private sub-routines
+
+# select a window if it exists, return 0 if it does not.
+
+sub selectWindow {
+	my $ret = 1;
+	my $win_num = $_[0];
+	
+	if ($win_num == -1) {	# default to the currently open window
+		$win_num = $current_window;
+	}
+	
+	if ($open_windows{$win_num}) {
+		unless ($current_window == $win_num) {
+			callAqtSelectPlot($win_num);
+			$current_window = $win_num;
+		}
+	} else {
+		print "$warning_message no such window number was available\n";
+		$ret = 0;
+	}
+	
+	$ret;
+}
+
+# parse options hashes
+
+sub parseOptions {
+	my $input_options = shift;
+	my $default_options = shift;
+
+	if ($debug_on){
+		print "$debug_message options hash is : \n";
+	}
+	while ( my($temp_key, $temp_value) = each %{$input_options} ) {
+		if ($debug_on){
+			print "  " . $temp_key . " => " . $temp_value . "\n";
+		}
+		if (exists $default_options->{$temp_key}) {
+			$default_options->{$temp_key} = $temp_value;
+		} else {
+			print "$warning_message no such option : $temp_key\n";
+		}
+	}
+}
+
+# output an options hash (for debugging mostly)
+
+sub outputHash {
+	my $hash_name = shift;
+	my $the_hash = shift;
+	
+	print "$debug_message $hash_name hash is : \n";
+	foreach my $temp_key (keys %{$the_hash}){
+		print "  " . $temp_key . " => " . $the_hash->{$temp_key} . "\n";
+	}
+}
+
+## the public sub-routines
+
+# opens a window using user supplied parameters, or uses defaults if they don't exist
+
+sub aquaOpen{
+	my %options;
+	$window_options{"WIN_NUM"} = $win_counter;
+	
+	if ($debug_on){
+		print "\n>>> aquaOpen\n\n";
+	}
+	
+	# get, check and load any user supplied options
+	
+	if ($_[0]){ parseOptions($_[0], \%window_options); }
+
+	# check if this window number already exists
+
+	if (exists $open_windows{$window_options{"WIN_NUM"}}) {
+		if ($warn_on) {
+			print "$warning_message window number " . $window_options{"WIN_NUM"} . " already exists\n";
+		}
+	}
+	
+	my $win_title = '(' . $window_options{"WIN_NUM"} . ') ' . $window_options{"WIN_TITLE"};
+	$current_window = $window_options{"WIN_NUM"};
+	$open_windows{$window_options{"WIN_NUM"}} = 1;
+	$win_counter++;
+		
+	# initialize connection to aquaterm program, if that hasn't already been done
+	
+	unless ($initialized) {
+		callAqtInit();
+		$initialized = 1;
+	}
+
+	# set warnings & debugging flags
+	
+	$warn_on  = $window_options{"WARN_ON"};
+	$debug_on = $window_options{"DEBUG_ON"};
+	
+	# output the window_options hash if we are in debugging mode
+	
+	if ($debug_on){
+		outputHash("window_options", \%window_options);
+		outputHash("open_windows", \%open_windows);
+	}
+	
+	# open up a window with the user/default parameters
+	
+	callAqtOpenPlot($window_options{"WIN_NUM"});
+	callAqtSetPlotSize($window_options{"SIZE_X"}, $window_options{"SIZE_Y"});
+	callAqtSetPlotTitle($win_title);
+
+	# this forces aquaterm to actually open and draw the window
+
+	callAqtSetBackgroundColor(pdl($window_options{"BACK_COLOR"}));
+	callAqtMoveTo(0.0, 0.0);
+	callAqtAddLineTo(1.0, 1.0);
+	callAqtRenderPlot();
+	callAqtClearPlot();
+	
+	# if necessary, initialize the default color table (a gray scale)
+	
+	unless($color_table->ndims() == 2){
+		$color_table = zeroes(byte,256,3);
+		$color_table = xvals($color_table);
+	}
+	
+	return 1;
+}
+
+# display a pdl as a 2 dimensional bitmap
+
+sub aquaBitmap{
+	my %options;
+	my %display_options = (	# default display options
+		ERASE => 0,
+		DEST_X => 0,
+		DEST_Y => 0,
+		DEST_W => -1,
+		DEST_H => -1,
+		AUTO_SCALE => 0,
+		M_MIN => 0.0,
+		M_MAX => 255.0,
+		WIN_NUM => -1,
+		TEXT => "",
+		TEXT_X => 6.0,
+		TEXT_Y => 10.0,
+		TEXT_C => [0.0, 0.0, 0.0]
+	);
+	
+	if ($debug_on){
+		print "\n>>> aquaDisplayBitmap\n\n";
+	}
+	
+	# get, check and load user supplied options
+
+	my $num_dims;
+	my @bmp_dims;
+	my $the_bitmap;
+	
+	if (@_) {
+		$the_bitmap = $_[0];
+		$num_dims = $the_bitmap->ndims();
+		@bmp_dims = $the_bitmap->dims();
+		unless (($num_dims == 2) || ($num_dims == 3)) { 
+			print "$warning_message a pdl with $num_dims dimensions is not supported\n";
+			return 0;
+		}
+		if ($_[1]) { parseOptions($_[1], \%display_options); }
+	} else {
+		print "$warning_message no pdl was supplied for aquaDisplayBitmap\n";
+		return 0;
+	}
+	
+	# if the user didn't provide the width and height of the part that they want to show, default to showing the whole thing
+		
+	if ($display_options{"DEST_W"} == -1) {
+		if ($num_dims == 2) {
+			$display_options{"DEST_W"} = $bmp_dims[0];
+		} else {
+			$display_options{"DEST_W"} = $bmp_dims[1];
+		}
+	}
+	if ($display_options{"DEST_H"} == -1) {
+		if ($num_dims == 2) {
+			$display_options{"DEST_H"} = $bmp_dims[1];
+		} else {
+			$display_options{"DEST_H"} = $bmp_dims[2];
+		}
+	}
+	
+	# check whether the user wants to auto-scale the image
+	
+	if ($display_options{"AUTO_SCALE"}){
+		$display_options{"M_MIN"} = min($the_bitmap);
+		$display_options{"M_MAX"} = max($the_bitmap);
+	}
+	
+	# re-scale the image if necessary
+	
+	if (($display_options{"M_MIN"} != 0.0) || ($display_options{"M_MAX"} != 255.0)){
+		if($debug_on){
+			print "$debug_message re-scaling image " . $display_options{"M_MIN"} . " - " . $display_options{"M_MAX"} . "\n";
+ 		}
+		$the_bitmap = float($the_bitmap);
+		if($display_options{"M_MIN"} < $display_options{"M_MAX"}) {
+			$the_bitmap = ($the_bitmap - $display_options{"M_MIN"}) * 255.0 / ($display_options{"M_MAX"} - $display_options{"M_MIN"});
+		} else {
+			print "$warning_message min is greater then max, image re-scale aborted\n";
+		}
+	}
+	
+	# threshold the image so that it doesn't roll over
+	
+	$the_bitmap = $the_bitmap * ($the_bitmap >= 0.0);
+	$the_bitmap -= 255.0;
+	$the_bitmap = $the_bitmap * ($the_bitmap <= 0.0);
+	$the_bitmap += 255.0;
+	$the_bitmap = byte($the_bitmap);
+		
+	# select the appropriate window, or open a new one if no such window is available
+
+	unless(selectWindow($display_options{"WIN_NUM"})){
+		aquaOpen({WIN_NUM => $display_options{"WIN_NUM"}, SIZE_X => $display_options{"DEST_W"}, SIZE_Y => $display_options{"DEST_H"}});
+	}
+	
+	# output the display_options hash if we are in debugging mode
+	
+	if ($debug_on){ outputHash("display_options", \%display_options); }
+
+	# make the image "true-color" if necessary
+
+	if ($num_dims == 2) {
+		$the_bitmap = index($color_table, $the_bitmap->dummy(0));	# convert the image to true color
+	}
+	
+	if($display_options{"ERASE"}) { callAqtClearPlot(); }	# if desired, clear the current plot
+
+	# display the image
+	
+	callAqtBitmap($the_bitmap, $display_options{"DEST_X"}, $display_options{"DEST_Y"}, $display_options{"DEST_W"}, $display_options{"DEST_H"});
+	
+	# if the user supplied a number, then add it to the plot
+	
+	if ($display_options{"TEXT"}){
+		callAqtSetColor(pdl($display_options{"TEXT_C"}));
+		callAqtAddLabel($display_options{"TEXT"}, $display_options{"TEXT_X"}, $display_options{"TEXT_Y"}, 0.0, 0);
+	}
+	
+	# tell aquaterm to draw the new plot
+	
+	callAqtRenderPlot();
+	
+	return 1;
+}
+
+# Makes a local copy of a user supplied color table. It is assumed that the color 
+# table pdl is of the form ($levels, $red, $green, $blue), a 256 x 4 pdl, as would 
+# be generated by the command '$color_table = cat(lut_data("xx"))'. $levels is ignored. 
+# $red, $green & $blue are assumed to range from 0 to 1.
+
+sub aquaSetColorTable{
+
+	if ($debug_on){
+		print "\n>>> aquaSetColorTable\n\n";
+	}
+
+	if (@_) {
+		my $col_tab = $_[0];
+		if (($col_tab->getdim(0) == 256)&&($col_tab->getdim(1) == 4)){
+			$color_table = byte(255.0 * ($col_tab->slice('0:255,1:3'))->copy);
+		} else {
+			print "$warning_message color table has the wrong dimensions (256 x 4 expected)";
+		}
+	} else {
+		print "$warning_message no color table supplied";
+	}
+}
+
+# Draw lines between a set of points given by a PDL of size (2,n), where the first dimension is
+# x & y position of the points and n is the number of points
+
+sub aquaPolyLine{
+	my %options;
+	my %line_options = (	# default line options
+		WIN_NUM => -1,
+		ERASE => 0,
+		WIDTH => 1,
+		CAPS => 0,
+		COLOR => [0.0, 0.0, 0.0]
+	);
+	
+	if ($debug_on){
+		print "\n>>> aquaPolyLine\n\n";
+	}
+	
+	# get, check and load user supplied options
+
+	my $the_line;
+	
+	if (@_) {
+		$the_line = float($_[0]);
+		if ($_[1]){ parseOptions($_[1], \%line_options); }
+	} else {
+		print "$warning_message no pdl was supplied for aquaPolyLine\n";
+		return 0;
+	}
+
+	# output the line_options hash if we are in debugging mode
+	
+	if ($debug_on){ outputHash("line_options", \%line_options); }
+
+	# select the right window to draw in
+	
+	unless(selectWindow($line_options{"WIN_NUM"})) { return; }
+
+	# set up for line drawing
+	
+	if($line_options{"ERASE"}) { callAqtClearPlot(); }	# if desired, clear the current plot
+	callAqtSetColor(pdl($line_options{"COLOR"}));		# set the line color
+	callAqtSetLineWidth($line_options{"WIDTH"});		# set the line width
+	callAqtSetLineCapStyle($line_options{"CAPS"});		# set the line cap style
+	
+	# add the line to the plot
+	
+	my $x = $the_line->slice("0,:")->squeeze->copy;
+	my $y = $the_line->slice("1,:")->squeeze->copy;
+	callAqtPolyline($x, $y);
+	
+	# render the plot
+	
+	callAqtRenderPlot();
+}
+
+# draw text on the screen with the selectable font, size & color
+
+sub aquaText{
+	my %options;
+	my %text_options = (	# default text options
+		WIN_NUM => -1,
+		ERASE => 0,
+		NAME => "Times-Roman",
+		ANGLE => 0.0,
+		X => 6.0,
+		Y => 10.0,
+		JUST => 0,
+		SIZE => 12.0,
+		COLOR => [0.0, 0.0, 0.0]
+	);
+	
+	if ($debug_on){
+		print "\n>>> aquaDrawText\n\n";
+	}
+	
+	# get, check and load user supplied options
+
+	my $the_text;
+	
+	if (@_) {
+		$the_text = $_[0];
+		if ($_[1]){ parseOptions($_[1], \%text_options); }
+	} else {
+		print "$warning_message no text was supplied for aquaDrawText\n";
+		return 0;
+	}
+
+	# output the text_options hash if we are in debugging mode
+	
+	if ($debug_on){ outputHash("text_options", \%text_options); }
+
+	# select the right window to draw in
+
+	unless(selectWindow($text_options{"WIN_NUM"})) { return; }
+	
+	# set the font size & type & color
+	
+	callAqtSetColor(pdl($text_options{"COLOR"}));
+	callAqtSetFontname($text_options{"NAME"});
+	callAqtSetFontsize($text_options{"SIZE"});
+
+	# draw the text
+	
+	if($text_options{"ERASE"}) { callAqtClearPlot(); }	# if desired, clear the current plot
+	callAqtAddLabel($the_text, $text_options{"X"}, $text_options{"Y"}, $text_options{"ANGLE"}, $text_options{"JUST"});
+
+	# render the plot
+	
+	callAqtRenderPlot();	
+}
+
+
+# return the coordinates of the next mouse click
+
+sub aquaMouse{
+	my %options;
+	my %mouse_options = (	# mouse options
+		WIN_NUM => -1
+	);
+	
+	if ($debug_on){
+		print "\n>>> aquaMouse\n\n";
+	}
+	
+	# get, check and load user supplied options
+
+	if ($_[0]){ parseOptions($_[0], \%mouse_options); }
+
+	# output the display_options hash if we are in debugging mode
+	
+	if ($debug_on){ outputHash("mouse_options", \%mouse_options); }
+
+	# select the window that we want to click in
+	
+	unless(selectWindow($mouse_options{"WIN_NUM"})) { return; }
+
+	my $event = callAqtWaitNextEvent();
+	my @loc;
+	if($event =~ /{([\d]+)[^\d]+([\d]+)}/){
+		push @loc, $1, $2;
+		# push @loc, $2;
+	}
+	@loc;
+}
+
+EOD
+
+###
+# specify those functions that will be exported
+###
+
+# clear the auto-generated list
+pp_export_nothing();
+
+# add the "right" functions
+pp_add_exported('', 'aquaOpen', 'aquaBitmap', 'aquaSetColorTable', 'aquaPolyLine', 'aquaText', 'aquaMouse');	
+
+###
+# Documentation
+###
+
+pp_addpm({At=>'Bot'},<<'EOD');
+
+=head1 NAME
+
+PDL::Graphics::AquaTerm - Provides access to the AquaTerm Mac OS-X graphics terminal
+
+=head1 SYNOPSIS
+
+# example 1
+
+use PDL;
+use PDL::Graphics::LUT;
+use PDL::Graphics::AquaTerm;
+my $x_size = 255; my $y_size = 255;
+aquaOpen({SIZE_X => $x_size, SIZE_Y => $y_size});
+aquaSetColorTable(cat(lut_data('idl5')));
+my $a = xvals(zeroes(byte,$x_size,$y_size));
+aquaBitmap($a);
+
+# example 2
+
+use PDL;
+use PDL::Graphics::AquaTerm;
+my $x_size = 255; my $y_size = 255;
+aquaOpen({WIN_NUM => 1, SIZE_X => $x_size, SIZE_Y => $y_size});
+my $a = sin(xvals(zeroes(float, $x_size, $y_size)) * 0.1);
+aquaBitmap($a, {AUTO_SCALE => 1});
+
+=head1 DESCRIPTION
+
+This module interfaces PDL directly to the AquaTerm Mac OS-X graphics terminal. It is primarily intended for quickly and easily displaying bitmap images.
+
+The coordinate system is defined by the window size (given in pixels) with (0,0) at the bottom left corner of the window. This means that if the window is set to be 300 x 200, then the bottom left corner will have coordinates (0,0) and the upper right corner will have coordinates (300,200). Anything that is drawn outside this boundary will be automatically clipped.
+
+=head1 FUNCTIONS
+
+=head2 aquaOpen
+
+=for ref
+
+Open a new AquaTerm window
+
+=for usage
+
+  Usage: aquaOpen(); # open the window with the defaults
+  Usage: aquaOpen({SIZE_X => 200, SIZE_Y => 200, BACK_COLOR => [0.0, 0.0, 0.0]});
+                 				
+Opens a new AquaTerm window, it also starts AquaTerm if necessary.
+
+Options recognized :
+
+      SIZE_X - window x size in pixels (default = 400)
+      SIZE_Y - window y size in pixels (default = 300)
+     WIN_NUM - The window number, used by the drawing commands to specify which window to draw in
+   WIN_TITLE - A title for the window, if desired (default = "Aquaterm.pm")
+  BACK_COLOR - [r, g, b] the windows background color (default = [1.0, 1.0, 1.0], i.e. white)
+     WARN_ON - set to 1 to turn on warning messages, 0 to turn off (default = 1)
+    DEBUG_ON - set to 1 to turn on debugging message, 0 to turn off (default = 0)
+
+=head2 aquaBitmap
+
+=for ref
+
+Display a PDL as a bitmap.
+
+=for usage
+
+  Usage: aquaDisplay($my_img); # display $my_img as a bitmap in the currently open window
+  Usage: aquaDisplay($my_img, {AUTO_SCALE => 1.0, TEXT => "my image", TEXT_C => [1.0, 0.0, 0.0]});
+
+Displays a PDL as a bitmap. The PDL can be of size either (m,n) or (3,m,n). PDLs of size (m,n) are converted to indexed color based on the current color table (see aquaSetColorTable). PDLs of size (3,m,n) are displayed as true-color images with the first dimension specifying the color (RGB). Unless a re-scaling is specified, the minimum value displayed is 0.0 and the maximum is 255.0.
+
+Options recognized :
+
+      DEST_X - position of the left side of the bitmap in pixels (default = 0)
+      DEST_Y - position of the bottom of the bitmap in pixels (default = 0)
+      DEST_W - width of the bitmap to be displayed (default = width of the PDL)
+      DEST_H - height of the bitmap to be displayed (default = height of the PDL)
+  AUTO_SCALE - if set equal to 1, the PDL will be rescaled such that its 
+                     minimum value is 1 and its max is 255 (default = 0)
+       M_MIN - the minimum value to be displayed (default = 0.0)
+       M_MAX - the maximum value to be displayed (default = 255.0)
+     WIN_NUM - specify which window to draw in (default = current window)
+        TEXT - text to display on the bitmap
+      TEXT_X - x location of the text in pixels (default = 6)
+      TEXT_Y - y location of the text in pixels (default = 10)
+      TEXT_C - RGB color of the text, (default = [0.0, 0.0, 0.0], i.e. black)
+	
+=head2 aquaSetColorTable
+
+=for ref
+
+Set the color table
+
+=for usage
+
+  Usage: aquaSetColorTable(cat(lut_data('idl5'))); # set the color table to idl5
+
+Makes a local copy of a user supplied color table. The color table must be a 256 x 4 pdl of the form (l,r,g,b), as would be generated by the command '$ct = cat(lut_data("xyz"))'. The l value is ignored. The r, g and b values should be in the range 0.0 - 1.0.
+
+=head2 aquaPolyLine
+
+=for ref
+
+Draws a (2,n) PDL as a line
+
+=for usage
+
+  Usage: aquaPolyLine($line, {WIDTH => 3, COLOR => [0.0, 0.0, 0.0]}); # draw $line black with width 3
+
+Draw a poly-line between a set of points given by a PDL of size (2,n). The first dimension of the PDL gives the x & y position of the individual points, n is the total number of points.
+
+Options recognized
+  WIN_NUM - which window to draw the line in
+    ERASE - clear the selected window prior to drawing the line
+    WIDTH - line width (default = 1)
+     CAPS - line cap style, I'm still unsure exactly what this is...
+    COLOR - RGB color of the line (default is black)
+
+=head2 aquaText
+
+=for ref
+
+Draw text
+
+=for usage
+
+  # draw red 'hello world' at position 20, 30 in the current window
+  Usage: aquaText("hello world", X => 20, Y => 30, COLOR => [1.0, 0.0, 0.0]);
+
+Draws text.
+
+Options recognized
+  WIN_NUM - which window to draw the text in
+    ERASE - clear the current window prior to drawing the text
+     NAME - name of the font to use (default = "Times-Roman")
+    ANGLE - angle to display the text relative to the horizontal in degrees (default = 0.0)
+        X - position in the window of the text anchor point (which depends on the justification of the text) (default = 6)
+        Y - position in the window of the bottom of the text (default = 10)
+     JUST - text justification, left = 0, center = 1, right = -1? (default = 0)
+     SIZE - font size in points (default = 12)
+    COLOR - text color (default is black)
+
+=head2 aquaMouse
+
+= for ref
+
+Returns location of next mouse click in the active window
+
+= for usage
+
+($mx, $my) = aquaMouse();
+
+Returns the location of the next mouse click in the active window as a 2 element array. The elements of the array are the x and y coordinates of the mouse click in pixels. The coordinates are relative to the bottom left corner of the active area of the window.
+
+Options recognized
+  WIN_NUM - which window to get the mouse click in
+
+=head1 INSTALLATION
+
+You must install aquaterm prior to trying to install this module as it links against the aquaterm library. After AquaTerm installation you should have the following directory/file structure:
+
+/usr/local/include/aquaterm/aquaterm.h
+/usr/local/lib/libaquaterm.dylib
+
+as explained in the INSTALL file that accompanies aquaterm.
+
+=head1 KNOWN ISSUES
+
+If you are using this module in a perl script simultaneously with another drawing/graphing module such as PDL::Graphics::PGPLOT::Window then you may have problems with the two modules drawing into the same window. This is hard to work around since PGPlot will always draw in the currently active window regardless of which window it opened in the first place.
+
+The (0,0) of bitmaps is their upper left corner, but for mouse events it is the bottom left corner. If you are trying to use the mouse to select a portion of a bitmap then you need to adjust the coordinates returned by the mouse accordingly (i.e. $good_y = $bitmap_size_y - $y_from_aquaMouse).
+
+=head1 BUGS
+
+No known bugs yet.
+
+=head1 SEE ALSO
+
+http://sourceforge.net/projects/aquaterm/
+
+=head1 AUTHOR
+
+Hazen Babcock (hbabcockos1@mac.com)
+
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
+
+=cut
+
+EOD
+
+pp_done();
